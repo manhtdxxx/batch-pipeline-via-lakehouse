@@ -1,0 +1,54 @@
+services:
+  spark-master:
+    build:
+      context: ./docker/spark
+      dockerfile: Dockerfile
+    image: my-spark:latest
+    container_name: spark-master
+    ports:
+      - "7077:7077" # port for worker(s) to connect
+      - "8082:8080" # web UI for master
+    volumes:
+      - ./docker/spark/conf:/opt/spark/conf
+      - ./src/elt:/opt/spark/app
+      - ./data:/opt/spark/data
+    networks:
+      - common-net
+    command: >
+      /bin/bash -c "
+      echo spark_pass | sudo -S service ssh start &&
+      /opt/spark/sbin/start-master.sh &&
+      tail -f /dev/null
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  spark-worker-1:
+    image: my-spark:latest
+    container_name: spark-worker-1
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    environment:
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+    ports:
+      - "8083:8081" # web UI for worker-1
+    command: >
+      /bin/bash -c "
+      echo spark_pass | sudo -S service ssh start &&
+      /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
+      tail -f /dev/null
+      "
+    volumes:
+      - ./src/elt:/opt/spark/app
+      - ./data:/opt/spark/data
+    networks:
+      - common-net
+
+networks:
+  common-net:
+    external: true
