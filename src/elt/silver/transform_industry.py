@@ -1,14 +1,7 @@
 # silver/transform_industry.py
 
 from _silver_pipeline import SilverPipeline
-import logging
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class IndustryTransformer(SilverPipeline):
@@ -36,10 +29,10 @@ class IndustryTransformer(SilverPipeline):
             positive_cols=["level"],
             dropna_cols=["icb_code"],
             fill_map={},  # if icb_code=... then level=..., icb_name=..., en_icb_name=...
+            scd_tracked_cols=["level", "icb_name", "en_icb_name"]
         )
 
 
 if __name__ == "__main__":
     industry_transformer = IndustryTransformer()
-    industry_transformer.run(overwrite=True)
-    # this table just a reference lookup so dont need SCD, so I overwrite all
+    industry_transformer.run(scd_type="one")

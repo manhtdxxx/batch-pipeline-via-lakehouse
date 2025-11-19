@@ -1,15 +1,7 @@
 # silver/transform_quarterly_ratio.py
 
 from _silver_pipeline import SilverPipeline
-import logging
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, LongType, TimestampType
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 
 class QuarterlyRatioTransformer(SilverPipeline):
     SCHEMA = StructType([
@@ -78,14 +70,9 @@ class QuarterlyRatioTransformer(SilverPipeline):
         if df is None:
             return None
 
-        df = self.handler.add_suggorate_key(df, key_cols=self.key_cols, sk_col_name="id", use_hash=False)
-
-        print(df.columns)
-
-        cols = ['id'] + [col for col in df.columns if col != "id"]
-        return df.select(*cols)
+        return df
 
 
 if __name__ == "__main__":
-    quarterly_transformer = QuarterlyRatioTransformer()
-    quarterly_transformer.run(overwrite=True)
+    ratio_transformer = QuarterlyRatioTransformer()
+    ratio_transformer.run(overwrite=True)

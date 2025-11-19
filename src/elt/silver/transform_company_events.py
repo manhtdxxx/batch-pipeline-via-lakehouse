@@ -1,16 +1,7 @@
 # silver/transform_company_events.py
 
 from _silver_pipeline import SilverPipeline
-import logging
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DateType, TimestampType, DoubleType
-from pyspark.sql import functions as F
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 
 class CompanyEventTransformer(SilverPipeline):
     SCHEMA = StructType([

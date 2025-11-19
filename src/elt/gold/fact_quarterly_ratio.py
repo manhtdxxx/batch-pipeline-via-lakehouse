@@ -25,6 +25,7 @@ class FactQuarterlyRatio:
         self.app_name = app_name
         self.silver_table = silver_table
         self.gold_table = gold_table
+        self.key_cols = ["symbol", "year", "quarter"]
         self.cols_order = [
             "id", "symbol", "date",
             "roa", "roe", "net_profit_margin",
@@ -35,25 +36,6 @@ class FactQuarterlyRatio:
             "ingest_timestamp"
         ]
 
-
-    def _add_date_col(self, df: DataFrame) -> DataFrame:
-        self.logger.info("Adding date column from year & quarter...")
-        df = df.withColumn(
-            "date", 
-            to_date(
-                concat(
-                    col("year"),
-                    lit("-"),
-                    when(col("quarter") == 1, lit("03-31"))
-                    .when(col("quarter") == 2, lit("06-30"))
-                    .when(col("quarter") == 3, lit("09-30"))
-                    .when(col("quarter") == 4, lit("12-31"))
-                ),
-                "yyyy-MM-dd"
-            )
-        )
-        df = df.drop("year", "quarter")
-        return df
     
     def _calc_price(self) -> Column:
         return col("market_capital") / col("outstanding_share")
@@ -77,7 +59,6 @@ class FactQuarterlyRatio:
 
     def calc_metrics(self, df: DataFrame) -> DataFrame:
         self.logger.info("Starting metric calculation pipeline...")
-        df = self._add_date_col(df)
         df = self._calc_eps(df)
         df = self._calc_bvps(df)
         df = self._calc_revenue(df)
@@ -94,6 +75,8 @@ class FactQuarterlyRatio:
             handler.stop()
             return
 
+        df = handler.add_surrogate_key(df, key_cols=self.key_cols, sk_col_name="id", use_hash=False)
+        df = handler.add_date_col(df)
         df = self.calc_metrics(df)
         df = df.select(*self.cols_order)
 

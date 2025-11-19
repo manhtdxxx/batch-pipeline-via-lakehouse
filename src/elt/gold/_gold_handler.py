@@ -1,9 +1,8 @@
 # gold/_gold_handler.py
 
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, lit, when, row_number, desc, asc
-from pyspark.sql.window import Window
-from typing import List, Dict, Tuple
+from pyspark.sql.functions import col, sha2, concat, to_date, when, lit
+from typing import List
 import logging
 
 
@@ -34,19 +33,26 @@ class GoldHandler:
         self.logger.info("SparkSession stopped.")
 
 
-    def read_incremental_from_silver(self, silver_table: str, gold_table: str, timestamp_col: str = "ingest_timestamp") -> DataFrame:
+    def read_incremental_from_silver(self, silver_table: str, gold_table: str, timestamp_col: str = "ingest_timestamp", date_col: str = None) -> DataFrame:
         is_empty = self.spark.sql(f"SELECT 1 FROM {gold_table} LIMIT 1").count() == 0
 
         if is_empty:
             self.logger.info(f"{gold_table} is empty. Reading all data from {silver_table} ...")
             query = f"SELECT * FROM {silver_table}"
         else:
-            max_ingest_timestamp = self.spark.sql(
-                f"SELECT MAX({timestamp_col}) AS max_timestamp FROM {gold_table}"
+            if date_col is not None:
+                col_to_check = date_col
+                sql_type = "DATE"
+            else:
+                col_to_check = timestamp_col
+                sql_type = "TIMESTAMP"
+
+            max_val = self.spark.sql(
+                f"SELECT MAX({col_to_check}) AS max_val FROM {gold_table}"
             ).collect()[0][0]
 
-            self.logger.info( f"Reading incremental data from {silver_table} where {timestamp_col} > {max_ingest_timestamp} ...")
-            query = f"SELECT * FROM {silver_table} WHERE {timestamp_col} > TIMESTAMP '{max_ingest_timestamp}'"
+            self.logger.info( f"Reading incremental data from {silver_table} where {col_to_check} > {max_val} ...")
+            query = f"SELECT * FROM {silver_table} WHERE {col_to_check} > {sql_type} '{max_val}'"
 
         return self.spark.sql(query)
 
@@ -61,3 +67,34 @@ class GoldHandler:
             .saveAsTable(gold_table)
         )
         self.logger.info(f"Done all!")
+
+
+    def add_surrogate_key(self, df: DataFrame, key_cols: List[str], sk_col_name: str, use_hash: bool = False) -> DataFrame:
+        self.logger.info(f"Adding SK {sk_col_name} key based on key columns: {key_cols}")
+        if use_hash:
+            hashed_cols = [sha2(col(c).cast("string"), 256) for c in key_cols]
+            df = df.withColumn(sk_col_name, concat(*hashed_cols))
+        else:
+            raw_cols = [col(c).cast("string") for c in key_cols]
+            df = df.withColumn(sk_col_name, concat(*raw_cols))
+        return df
+
+
+    def add_date_col(self, df: DataFrame) -> DataFrame:
+        self.logger.info("Adding date column from year & quarter...")
+        df = df.withColumn(
+            "date", 
+            to_date(
+                concat(
+                    col("year"),
+                    lit("-"),
+                    when(col("quarter") == 1, lit("03-31"))
+                    .when(col("quarter") == 2, lit("06-30"))
+                    .when(col("quarter") == 3, lit("09-30"))
+                    .when(col("quarter") == 4, lit("12-31"))
+                ),
+                "yyyy-MM-dd"
+            )
+        )
+        df = df.drop("year", "quarter")
+        return df

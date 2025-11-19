@@ -6,12 +6,6 @@ from pyspark.sql.types import StructType, StructField, StringType, LongType, Dat
 from pyspark.sql import functions as F
 
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
-
 class CompanyShareholderTransformer(SilverPipeline):
     SCHEMA = StructType([
         StructField("id", StringType(), True),

@@ -1,14 +1,7 @@
 # silver/transform_company.py
 
 from _silver_pipeline import SilverPipeline
-import logging
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
 
 
 class CompanyTransformer(SilverPipeline):

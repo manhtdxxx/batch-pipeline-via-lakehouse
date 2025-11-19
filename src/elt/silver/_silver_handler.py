@@ -141,18 +141,7 @@ class SilverHandler:
         window = Window.partitionBy(*key_cols).orderBy(*order_exprs)
         df = df.withColumn("rank", row_number().over(window))
         return df.filter(col("rank") == 1).drop("rank")
-
-
-    def add_suggorate_key(self, df: DataFrame, key_cols: List[str], sk_col_name: str, use_hash: bool = False) -> DataFrame:
-        self.logger.info(f"Adding SK {sk_col_name} key based on key columns: {key_cols}")
-        if use_hash:
-            hashed_cols = [sha2(col(c).cast("string"), 256) for c in key_cols]
-            df = df.withColumn(sk_col_name, concat(*hashed_cols))
-        else:
-            raw_cols = [col(c).cast("string") for c in key_cols]
-            df = df.withColumn(sk_col_name, concat(*raw_cols))
-        return df
-
+    
 
     def _add_scd2_cols(self, df: DataFrame) -> DataFrame:
         self.logger.info("Adding SCD Type 2 columns: start_timestamp, end_timestamp, is_current ...")
