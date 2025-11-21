@@ -123,11 +123,11 @@ def get_ohlcv_df(quote_objects: list[Quote], start_date: Union[str, datetime], e
 
 
 # GET FINANCIAL RATIOS
-def get_ratio_df(finance_objects: list[Finance], start_year: int, end_year: Optional[int] = None, period: str = "year") -> pd.DataFrame:
+def get_ratio_df(finance_objects: list[Finance], start_year: int, end_year: Optional[int] = None, period: str = "year", language: str ="en") -> pd.DataFrame:
     print(f"Fetching financial ratios by {period} from {start_year} to {end_year if end_year else 'latest'}...")
     dfs = []
     for obj in finance_objects:
-        df = obj.ratio(period=period, lang='en')
+        df = obj.ratio(period=period, lang=language)
         dfs.append(df)
     dfs = pd.concat(dfs, axis=0, ignore_index=True)
     print(f"Financial ratios by {period} fetched ({len(dfs)} rows).")

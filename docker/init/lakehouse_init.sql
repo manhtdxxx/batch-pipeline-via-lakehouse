@@ -59,8 +59,6 @@ CREATE TABLE IF NOT EXISTS iceberg.silver.quarterly_ratio (
     roa DOUBLE,
     roe DOUBLE,
     net_profit_margin DOUBLE,
-    financial_leverage DOUBLE,
-    debt_to_equity DOUBLE,
     market_capital DOUBLE,
     outstanding_share BIGINT,
     price_to_earnings DOUBLE,
@@ -90,8 +88,6 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.fact_quarterly_ratio (
     roa DOUBLE,
     roe DOUBLE,
     net_profit_margin DOUBLE,
-    financial_leverage DOUBLE,
-    debt_to_equity DOUBLE,
     market_capital DOUBLE,
     outstanding_share BIGINT,
     price_to_earnings DOUBLE,
@@ -101,6 +97,12 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.fact_quarterly_ratio (
     eps DOUBLE,
     bvps DOUBLE,
     revenue DOUBLE,
+    net_profit DOUBLE,
+    asset DOUBLE, 
+    equity DOUBLE,
+    debt DOUBLE,
+    debt_to_asset DOUBLE,
+    financial_leverage DOUBLE,
     asset_turnover DOUBLE,
     ingest_timestamp TIMESTAMP WITH TIME ZONE
 );
@@ -159,14 +161,14 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.dim_shareholder (
 );
 
 
-CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
-    symbol VARCHAR,
-    date DATE,
-    open DOUBLE,
-    high DOUBLE,
-    low DOUBLE,
-    close DOUBLE,
-    volume BIGINT,
-    ...
-    ingest_timestamp TIMESTAMP WITH TIME ZONE
-);
+-- CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
+--     symbol VARCHAR,
+--     date DATE,
+--     open DOUBLE,
+--     high DOUBLE,
+--     low DOUBLE,
+--     close DOUBLE,
+--     volume BIGINT,
+--     ...
+--     ingest_timestamp TIMESTAMP WITH TIME ZONE
+-- );

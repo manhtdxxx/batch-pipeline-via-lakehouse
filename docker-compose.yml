@@ -23,7 +23,6 @@ services:
       "
     volumes:
       - ./src/dags:/opt/airflow/dags
-      - ./data:/opt/airflow/data
     networks:
       - common-net
 

@@ -1,0 +1,1 @@
+# gold/fact_daily_ohlcv.py
