@@ -27,6 +27,9 @@ airflow-down:
 spark-bash:
 	docker exec -it spark-master bash
 
+spark-worker-bash:
+	docker exec -it spark-worker-1 bash
+
 trino-bash:
 	docker exec -it trino bash
 

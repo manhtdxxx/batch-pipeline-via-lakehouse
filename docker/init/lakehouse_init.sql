@@ -161,14 +161,18 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.dim_shareholder (
 );
 
 
--- CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
---     symbol VARCHAR,
---     date DATE,
---     open DOUBLE,
---     high DOUBLE,
---     low DOUBLE,
---     close DOUBLE,
---     volume BIGINT,
---     ...
---     ingest_timestamp TIMESTAMP WITH TIME ZONE
--- );
+CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
+    id VARCHAR,
+    symbol VARCHAR,
+    date DATE,
+    open DOUBLE,
+    high DOUBLE,
+    low DOUBLE,
+    close DOUBLE,
+    volume BIGINT,
+    ema_20 DOUBLE,
+    ema_50 DOUBLE,
+    ema_200 DOUBLE,
+    rsi_14 DOUBLE,
+    ingest_timestamp TIMESTAMP WITH TIME ZONE
+);

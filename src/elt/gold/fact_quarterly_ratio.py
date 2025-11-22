@@ -25,7 +25,7 @@ class FactQuarterlyRatio:
         self.app_name = app_name
         self.silver_table = silver_table
         self.gold_table = gold_table
-        self.key_cols = ["symbol", "year", "quarter"]
+        self.business_keys = ["symbol", "year", "quarter"]
         self.cols_order = [
             "id", "symbol", "date",
             "roa", "roe", "net_profit_margin",
@@ -148,7 +148,7 @@ class FactQuarterlyRatio:
             handler.stop()
             return
 
-        df = handler.add_surrogate_key(df, key_cols=self.key_cols, sk_col_name="id", use_hash=False)
+        df = handler.add_surrogate_key(df, key_cols=self.business_keys, sk_col_name="id", use_hash=False)
         df = handler.add_date_col(df)
 
         df = self.fix_sign_of_npm(df)

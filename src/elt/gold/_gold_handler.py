@@ -1,7 +1,7 @@
 # gold/_gold_handler.py
 
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, sha2, concat, to_date, when, lit
+from pyspark.sql.functions import col, sha2, concat, to_date, when, lit, to_unix_timestamp
 from typing import List
 import logging
 
@@ -71,11 +71,19 @@ class GoldHandler:
 
     def add_surrogate_key(self, df: DataFrame, key_cols: List[str], sk_col_name: str, use_hash: bool = False) -> DataFrame:
         self.logger.info(f"Adding SK {sk_col_name} key based on key columns: {key_cols}")
+
+        processed_cols = []
+        for c in key_cols:
+            if "date" in c.lower() or "timestamp" in c.lower():
+                processed_cols.append(to_unix_timestamp(col(c)))
+            else:
+                processed_cols.append(col(c).cast("string"))
+
         if use_hash:
-            hashed_cols = [sha2(col(c).cast("string"), 256) for c in key_cols]
+            hashed_cols = [sha2(c.cast("string"), 256) for c in processed_cols]
             df = df.withColumn(sk_col_name, concat(*hashed_cols))
         else:
-            raw_cols = [col(c).cast("string") for c in key_cols]
+            raw_cols = [c.cast("string") for c in processed_cols]
             df = df.withColumn(sk_col_name, concat(*raw_cols))
         return df
 

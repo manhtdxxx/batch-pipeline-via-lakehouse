@@ -9,9 +9,9 @@
 
 # 📌 1. Introduction
 
-This project demonstrates a **modern Lakehouse architecture** built on **Apache Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for analytics and BI use cases.
+This project demonstrates a **Lakehouse architecture** built on **Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for analytics and BI use cases.
 
-**Data Source:** Data is fetched through **VNStock Python Library**
+**Data Source:** Data fetched from **_VCI_** through **_VNStock - Python Library_**
 
 **Key features of this project include:**
 
@@ -39,7 +39,7 @@ This project demonstrates a **modern Lakehouse architecture** built on **Apache 
 ```text
 batch-pipeline-via-lakehouse/
 │
-├── docker/
+├── docker/                            # Docker setup
 │   ├── init/                            # Initialization scripts in containers
 │   ├── hive/                            # Hive metastore configuration + Dockerfile
 │   ├── trino/                           # Trino configuration
@@ -49,12 +49,12 @@ batch-pipeline-via-lakehouse/
 │
 ├── data/                              # Raw datasets
 ├── experiments/                       # Notebooks and scripts for testing pipelines and data exploration
-├── src/
-│   ├── dags/                          # Airflow DAGs
-│   ├── elt/
-│       ├── bronze/                    # Bronze layer scripts – load raw data
-│       ├── silver/                    # Silver layer scripts – clean/enrich data
-│       ├── gold/                      # Gold layer scripts – aggregated / analytics-ready
+├── src/                               # Main scripts
+│   ├── dags/                            # Airflow DAG scripts
+│   ├── elt/                             # ELT scripts
+│       ├── bronze/                        # Bronze layer scripts – load raw data
+│       ├── silver/                        # Silver layer scripts – clean/enrich data
+│       ├── gold/                          # Gold layer scripts – aggregated / analytics-ready
 │
 ├── readme/                            # Documentation, diagrams, notes
 │
@@ -80,7 +80,7 @@ Before starting, please ensure you have:
 **Step 1:** Before running the pipeline, make sure `make` is installed. On Windows, you install Chocolatey first and then install Make:
 
 ```powershell
-# Install Chocolatey (run in PowerShell as Administrator)
+# Install Chocolatey (MUST run in PowerShell as Administrator)
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 # Upgrade Chocolatey (optional but recommended)
 choco upgrade chocolatey
@@ -95,7 +95,7 @@ make --version
 ```bash
 # Navigate to hive/jars folder
 cd docker/hive/jars
-# Run Makefile to install (run in Git Bash)
+# Run Makefile to install (MUST run in Git Bash)
 make download
 ```
 
@@ -104,7 +104,7 @@ make download
 ```bash
 # Create a Docker network "common-net" for all services to communicate with each other
 docker network create common-net
-# Start all services (download if needed) using Makefile
+# Start all services
 make all-up
 ```
 
@@ -152,17 +152,22 @@ make trino-init
 
 ### Step 3: Running pipeline through Airflow
 
-**3.1** Before running the batch pipeline in Airflow, you need to **set up SSH connections** between the Airflow container and the Spark container:
+**3.1** Before running the batch pipeline in Airflow, you need to **set up SSH connection** between the Airflow container and the Spark container:
 
 ```bash
 make airflow-ssh
 ```
 
-**3.2** After setting up the SSH connection, access the Airflow UI to trigger the batch DAGs:
+**3.2** After setting up the SSH connection, access the Airflow UI to trigger the DAG:
 ![DAG](readme/dag.png)
 
-💡 Once the DAGs finish, you can open DBeaver and connect to Trino to query the Lakehouse and verify the results.
+💡 Once the DAG finish, you can open DBeaver and connect to Trino to query the Lakehouse and verify the result.
 
 ### Step 4: Dashboard using PBI
+
+Power BI does not include Trino support by default; a custom connector must be set up.
+
+- Official Docs: https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-connector-extensibility
+- Custom Connector: https://github.com/CreativeDataEU/PowerBITrinoConnector
 
 **⚠️ Ongoing**
