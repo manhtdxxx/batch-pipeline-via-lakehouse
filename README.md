@@ -189,4 +189,4 @@ Power BI does not include Trino support by default; a custom connector must be s
 **⚠️ Dashboard still ongoing**
 
 ---
-© 2025 ManhTD — All rights reserved.
+© 2025 manhtdxxx — All rights reserved.
