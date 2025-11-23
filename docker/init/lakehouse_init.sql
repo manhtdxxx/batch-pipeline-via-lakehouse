@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.fact_quarterly_ratio (
     price_to_book_value DOUBLE,
     price_to_sales DOUBLE,
     -- derived columns
+    price DOUBLE,
     eps DOUBLE,
     bvps DOUBLE,
     revenue DOUBLE,

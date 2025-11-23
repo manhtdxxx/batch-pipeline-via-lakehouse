@@ -30,22 +30,23 @@ class FactQuarterlyRatio:
             "id", "symbol", "date",
             "roa", "roe", "net_profit_margin",
             "market_capital", "outstanding_share", "price_to_earnings", "price_to_book_value", "price_to_sales",
-            "eps", "bvps", "revenue", "net_profit", "asset", "equity", "debt",
+            "price", "eps", "bvps", "revenue", "net_profit", "asset", "equity", "debt",
             "debt_to_asset", "financial_leverage", "asset_turnover",
             "ingest_timestamp"
         ]
 
     
-    def _calc_price(self) -> Column:
-        return col("market_capital") / col("outstanding_share")
+    def _calc_price(self, df: DataFrame) -> DataFrame:
+        self.logger.info("Calculating Price per share...")
+        return df.withColumn("price", (col("market_capital") / col("outstanding_share")).cast(DoubleType()))
     
     def _calc_eps(self, df: DataFrame) -> DataFrame:
         self.logger.info("Calculating EPS...")
-        return df.withColumn("eps", ((self._calc_price()) / col("price_to_earnings")).cast(DoubleType()))
+        return df.withColumn("eps", (col("price") / col("price_to_earnings")).cast(DoubleType()))
 
     def _calc_bvps(self, df: DataFrame) -> DataFrame:
         self.logger.info("Calculating BVPS...")
-        return df.withColumn("bvps", (self._calc_price() / col("price_to_book_value")).cast(DoubleType()))
+        return df.withColumn("bvps", (col("price") / col("price_to_book_value")).cast(DoubleType()))
 
     def _calc_revenue(self, df: DataFrame) -> DataFrame:
         self.logger.info("Calculating Revenue...")
@@ -81,6 +82,7 @@ class FactQuarterlyRatio:
     
     def calc_additional_metrics(self, df: DataFrame) -> DataFrame:
         self.logger.info("Starting metric calculation pipeline...")
+        df = self._calc_price(df)
         df = self._calc_eps(df)
         df = self._calc_bvps(df)
         df = self._calc_revenue(df)

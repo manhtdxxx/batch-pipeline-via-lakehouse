@@ -71,8 +71,9 @@ batch-pipeline-via-lakehouse/
 
 Before starting, please ensure you have:
 
-- Docker Desktop installed and running.
+- Git.
 - VS Code installed to open project.
+- Docker Desktop installed and running.
 - DBeaver installed to connect to Trino to query data from Lakehouse.
 
 ## 4.2 Setup & Initialization
@@ -90,16 +91,22 @@ choco install make
 make --version
 ```
 
-**Step 2:** Install Hadoop & Hive to set up Hive Metastore Image:
+**Step 2:** Clone this repository to your local machine:
 
 ```bash
-# Navigate to hive/jars folder
+git clone https://github.com/manhtdxxx/batch-pipeline-via-lakehouse.git
+```
+
+**Step 3:** Install Hadoop & Hive to build Hive Metastore Image:
+
+```bash
+# Open project in VSCode & navigate to hive/jars folder
 cd docker/hive/jars
 # Run Makefile to install (MUST run in Git Bash)
 make download
 ```
 
-**Step 3:** Set up the whole architecture through Docker:
+**Step 4:** Set up the whole architecture through Docker:
 
 ```bash
 # Create a Docker network "common-net" for all services to communicate with each other
@@ -170,4 +177,10 @@ Power BI does not include Trino support by default; a custom connector must be s
 - Official Docs: https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-connector-extensibility
 - Custom Connector: https://github.com/CreativeDataEU/PowerBITrinoConnector
 
-**⚠️ Ongoing**
+![Market Cap](dashboard/market_cap.png)
+
+![Valuation](dashboard/valuation.png)
+
+![Risk & Return](dashboard/risk_return.png)
+
+**⚠️ Dashboard still Ongoing**
