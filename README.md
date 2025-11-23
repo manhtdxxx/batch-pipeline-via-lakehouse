@@ -177,10 +177,13 @@ Power BI does not include Trino support by default; a custom connector must be s
 - Official Docs: https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-connector-extensibility
 - Custom Connector: https://github.com/CreativeDataEU/PowerBITrinoConnector
 
+> **Here is the preview:**
+
 ![Market Cap](dashboard/market_cap.png)
 
 ![Valuation](dashboard/valuation.png)
 
 ![Risk & Return](dashboard/risk_return.png)
 
-**⚠️ Dashboard still Ongoing**
+
+**⚠️ Dashboard still ongoing**
