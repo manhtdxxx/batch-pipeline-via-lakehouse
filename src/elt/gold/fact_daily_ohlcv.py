@@ -1,15 +1,16 @@
-# gold/fact_daily_ohlcv.py
-
 import logging
 from _gold_handler import GoldHandler
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.pandas.functions import pandas_udf, PandasUDFType
-from pyspark.sql.types import StructType, StructField, StringType, DoubleType, LongType, DateType, TimestampType
+from pyspark.sql.types import (
+    StructType, StructField, StringType, DoubleType, LongType, DateType,
+    TimestampType, IntegerType
+)
 from pyspark.sql.functions import col
 from pyspark.sql import SparkSession
 import pandas as pd
+import numpy as np
 from typing import List
-
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,17 +32,21 @@ class FactDailyOHLCV:
         self.cols_order = [
             "id", "symbol", "date",
             "open", "high", "low", "close", "volume",
-            "ema_20", "ema_50", "ema_200", "rsi_14",
+            "return",
+            "range", "body", "upper_wick", "lower_wick", "body_ratio", "upper_ratio", "lower_ratio", "is_green",
+            "ema_10", "ema_20", "close_vs_ema10", "close_vs_ema20",
+            "rsi_14", "rsi_14_scaled",
+            "vol_ema_5", "vol_ema_10", "rvol_5", "rvol_10",
+            "label_1", "label_2", "label_3",
             "ingest_timestamp"
         ]
 
-
     def _read_days_ago_from_gold(self, gold_table: str, length: int = 60, spark: SparkSession = None) -> DataFrame:
-        self.logger.info(f"Reading last 60 days per symbol from {gold_table}...")
+        self.logger.info(f"Reading last {length} days per symbol from {gold_table}...")
         query = f"""
             SELECT * FROM (
                 SELECT *,
-                       ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) AS rn
+                ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) AS rn
                 FROM {gold_table}
             ) tmp
             WHERE rn <= {length}
@@ -49,9 +54,8 @@ class FactDailyOHLCV:
         df = spark.sql(query)
         self.logger.info(f"Read {df.count()} rows from gold table")
         return df
-    
 
-    def _calc_metrics(self) -> pd.DataFrame:
+    def _calc_metrics(self):
         schema = StructType([
             StructField("id", StringType()),
             StructField("symbol", StringType()),
@@ -62,19 +66,54 @@ class FactDailyOHLCV:
             StructField("close", DoubleType()),
             StructField("volume", LongType()),
             StructField("ingest_timestamp", TimestampType()),
+            StructField("return", DoubleType()),
+            StructField("range", DoubleType()),
+            StructField("body", DoubleType()),
+            StructField("upper_wick", DoubleType()),
+            StructField("lower_wick", DoubleType()),
+            StructField("body_ratio", DoubleType()),
+            StructField("upper_ratio", DoubleType()),
+            StructField("lower_ratio", DoubleType()),
+            StructField("is_green", IntegerType()),
+            StructField("ema_10", DoubleType()),
             StructField("ema_20", DoubleType()),
-            StructField("ema_50", DoubleType()),
-            StructField("ema_200", DoubleType()),
-            StructField("rsi_14", DoubleType())
+            StructField("close_vs_ema10", DoubleType()),
+            StructField("close_vs_ema20", DoubleType()),
+            StructField("rsi_14", DoubleType()),
+            StructField("rsi_14_scaled", DoubleType()),
+            StructField("vol_ema_5", LongType()),
+            StructField("vol_ema_10", LongType()),
+            StructField("rvol_5", DoubleType()),
+            StructField("rvol_10", DoubleType()),
+            StructField("label_1", IntegerType()),
+            StructField("label_2", IntegerType()),
+            StructField("label_3", IntegerType())
         ])
 
         @pandas_udf(returnType=schema, functionType=PandasUDFType.GROUPED_MAP)
         def calc(pdf: pd.DataFrame) -> pd.DataFrame:
             pdf = pdf.sort_values("date")
+
+            # Return
+            pdf["return"] = (pdf["close"] - pdf["close"].shift(1)) / pdf["close"].shift(1)
+
+            # Candle metrics
+            pdf["range"] = pdf["high"] - pdf["low"]
+            pdf["body"] = pdf["close"] - pdf["open"]
+            pdf["upper_wick"] = pdf["high"] - pdf[["open", "close"]].max(axis=1)
+            pdf["lower_wick"] = pdf[["open", "close"]].min(axis=1) - pdf["low"]
+
+            pdf["body_ratio"] = (pdf["body"].abs() / pdf["range"]).fillna(0)
+            pdf["upper_ratio"] = (pdf["upper_wick"] / pdf["range"]).fillna(0)
+            pdf["lower_ratio"] = (pdf["lower_wick"] / pdf["range"]).fillna(0)
+            pdf["is_green"] = (pdf["body"] > 0).astype(int)
+
             # EMA
+            pdf["ema_10"] = pdf["close"].ewm(span=10, adjust=False).mean()
             pdf["ema_20"] = pdf["close"].ewm(span=20, adjust=False).mean()
-            pdf["ema_50"] = pdf["close"].ewm(span=50, adjust=False).mean()
-            pdf["ema_200"] = pdf["close"].ewm(span=200, adjust=False).mean()
+            pdf["close_vs_ema10"] = (pdf["close"] - pdf["ema_10"]) / pdf["ema_10"]
+            pdf["close_vs_ema20"] = (pdf["close"] - pdf["ema_20"]) / pdf["ema_20"]
+
             # RSI
             delta = pdf["close"].diff()
             gain = delta.clip(lower=0)
@@ -83,35 +122,59 @@ class FactDailyOHLCV:
             avg_loss = loss.rolling(14, min_periods=14).mean()
             rs = avg_gain / avg_loss
             pdf["rsi_14"] = 100 - (100 / (1 + rs))
-            return pdf
+            pdf["rsi_14_scaled"] = pdf["rsi_14"] / 100.0
 
-        return calc        
+            # Volume metrics
+            pdf["vol_ema_5"] = pdf["volume"].ewm(span=5, adjust=False).mean()
+            pdf["vol_ema_10"] = pdf["volume"].ewm(span=10, adjust=False).mean()
+            pdf["rvol_5"] = pdf["volume"] / pdf["vol_ema_5"]
+            pdf["rvol_10"] = pdf["volume"] / pdf["vol_ema_10"]
+
+            # Label calculation
+            std_window = 10
+            pct_change_std = pdf['close'].pct_change().rolling(std_window).std()
+            factors = [0.75, 1.0, 1.25]
+            future_window = 3
+            future_return = (pdf['close'].shift(-future_window) - pdf['close']) / pdf['close']
+
+            for idx, factor in enumerate(factors, start=1):
+                threshold = factor * pct_change_std
+                pdf[f"label_{idx}"] = np.where(
+                    future_return.isna(), np.nan,
+                    np.where(future_return > threshold, 2,
+                             np.where(future_return < -threshold, 0, 1))
+                )
+
+            return pdf
+        
+        return calc
 
 
     def run(self):
         self.logger.info("Starting FactDailyOHLCV pipeline...")
         handler = GoldHandler(self.app_name)
 
-        df = handler.read_incremental_from_silver(silver_table=self.silver_table, gold_table=self.gold_table, date_col="date")
+        df = handler.read_incremental_from_silver(
+            silver_table=self.silver_table,
+            gold_table=self.gold_table,
+            date_col="date"
+        )
+
         if df.rdd.isEmpty():
             self.logger.info(f"No new data from {self.silver_table}. Skipping append to {self.gold_table}.")
             handler.stop()
             return
-        
+
         df = handler.add_surrogate_key(df, key_cols=self.business_keys, sk_col_name="id", use_hash=False)
 
         df_ago = self._read_days_ago_from_gold(gold_table=self.gold_table, length=60, spark=handler.spark)
-        if not df_ago.rdd.isEmpty():
-            df_union = df.unionByName(df_ago)
-        else:
-            df_union = df
-        
-        df_union = df_union.groupby("symbol").apply(self._calc_metrics())
+        df_union = df.unionByName(df_ago) if not df_ago.rdd.isEmpty() else df
 
+        df_union = df_union.groupby("symbol").apply(self._calc_metrics())
         df_union = df_union.select(*self.cols_order)
+
         handler.append_to_gold(df_union, gold_table=self.gold_table)
         handler.stop()
-
         self.logger.info("Done all!")
 
 

@@ -6,12 +6,10 @@ import logging
 from pyspark.sql.types import StructType
 from pyspark.sql import DataFrame
 
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-
 
 class SilverPipeline:
     def __init__(self,

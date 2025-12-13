@@ -5,24 +5,91 @@ services:
       dockerfile: Dockerfile
     image: my-airflow
     container_name: airflow
-    restart: unless-stopped
+    depends_on:
+      - airflow-db
     ports:
       - 8081:8080
     environment:
-      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__WEBSERVER__EXPOSE_CONFIG=True
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
       - AIRFLOW_CONN_SPARK_CONN=spark://spark-master:7077 # if using SparkSubmitOperator
       - AIRFLOW_CONN_SSH_SPARK=ssh://spark_user:spark_pass@spark-master:22 # if using SSHOperator
+      - AIRFLOW_CONN_SSH_MODEL=ssh://model_user:model_pass@model-pipeline:22
     command: >
       bash -c "
       airflow db migrate &&
-      airflow users create --username airflow --password airflow --firstname manh --lastname td --role Admin --email tdmanh1510@gmail.com;
+      airflow users create --username airflow --password airflow --firstname manh --lastname td --role Admin --email tdmanh1510@gmail.com || true;
       airflow webserver &
       exec airflow scheduler
       "
     volumes:
       - ./src/dags:/opt/airflow/dags
+    networks:
+      - common-net
+
+  mlflow:
+    build:
+      context: ./docker/mlflow
+      dockerfile: Dockerfile
+    image: my-mlflow
+    container_name: mlflow
+    depends_on:
+      # - minio
+      - mlflow-db
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@mlflow-db:5432/mlflow
+      MLFLOW_ARTIFACTS_DESTINATION: s3://mlflow-artifacts
+      # MLFlow will automatically detect and use these ENVs
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      AWS_REGION: us-east-1
+    ports:
+      - "5000:5000"
+    networks:
+      - common-net
+
+  airflow-db:
+    image: postgres:15-alpine
+    container_name: airflow-db
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - "5433:5432"
+    volumes:
+      - airflow-db:/var/lib/postgresql/data
+    networks:
+      - common-net
+
+  mlflow-db:
+    image: postgres:15-alpine
+    container_name: mlflow-db
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_DB: mlflow
+    ports:
+      - "5434:5432"
+    volumes:
+      - mlflow-db:/var/lib/postgresql/data
+    networks:
+      - common-net
+
+  model-pipeline:
+    build:
+      context: ./docker/model-pipeline
+      dockerfile: Dockerfile
+    image: my-model-pipeline
+    container_name: model-pipeline
+    command: >
+      /bin/bash -c "
+      echo model_pass | sudo -S service ssh start &&
+      tail -f /dev/null
+      "
+    volumes:
+      - ./src/model-pipeline:/app
     networks:
       - common-net
 
@@ -50,6 +117,8 @@ services:
 volumes:
   airflow-db:
     name: airflow-db
+  mlflow-db:
+    name: mlflow-db
   # superset-data:
   #   name: superset-data
 

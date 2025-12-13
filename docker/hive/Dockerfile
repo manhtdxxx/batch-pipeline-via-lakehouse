@@ -58,7 +58,3 @@ COPY conf/hive-site.xml ${HIVE_CONF_DIR}/hive-site.xml
 COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
-
-# Expose Hive Metastore port
-EXPOSE 9083
-

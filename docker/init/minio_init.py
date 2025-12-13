@@ -1,61 +1,64 @@
 import time
 import socket
+import logging
 from minio import Minio
 from minio.error import S3Error
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
-# ==== FUNCTIONS ====
-def wait_for_service(host: str, port: int, timeout=30, max_retries=3, retry_interval=5):
-    attempt = 0
-    while attempt < max_retries:
+class MinioManager:
+    def __init__(self, host="minio", port=9000, access_key="minio", secret_key="minio123", buckets=None):
+        self.host = host
+        self.port = port
+        self.access_key = access_key
+        self.secret_key = secret_key
+        self.buckets = buckets or ["lakehouse", "mlflow-artifacts"]
+
+        self.client = None
+        self._init_client()
+
+    def _wait_for_service(self, timeout=30, retries=3, sleep=5):
+        for attempt in range(1, retries + 1):
+            try:
+                with socket.create_connection((self.host, self.port), timeout=timeout):
+                    logging.info(f"Service available at {self.host}:{self.port}")
+                    return
+            except OSError:
+                logging.warning(f"Waiting for service {self.host}:{self.port}... attempt {attempt}/{retries}")
+                time.sleep(sleep)
+        raise TimeoutError(f"Service {self.host}:{self.port} unavailable after {retries} attempts")
+
+
+    def _init_client(self):
+        logging.info("Initializing Minio client...")
         try:
-            with socket.create_connection((host, port), timeout=timeout):
-                print(f"Service available at {host}:{port}")
-                return
-        except OSError:
-            attempt += 1
-            print(f"Waiting for service at {host}:{port}... Retry {attempt}/{max_retries}")
-            time.sleep(retry_interval)
-
-    raise TimeoutError(f"Service at {host}:{port} not available after {max_retries} attempts")
-        
-
-def get_minio_client(host: str, port: str, username: str, password: str) -> Minio:
-    return Minio(
-        f"{host}:{port}",
-        access_key=username,
-        secret_key=password,
-        secure=False
-    )
+            self._wait_for_service()
+            self.client = Minio(
+                f"{self.host}:{self.port}",
+                access_key=self.access_key,
+                secret_key=self.secret_key,
+                secure=False
+            )
+            logging.info("Minio client successfully created.")
+        except Exception as e:
+            logging.error(f"Failed to initialize Minio client: {e}")
+            raise
 
 
-def create_buckets(client: Minio, buckets: list[str]):
-    for bucket in buckets:
-        try:
-            if not client.bucket_exists(bucket):
-                client.make_bucket(bucket)
-                print(f"Bucket '{bucket}' created successfully.")
-            else:
-                print(f"Bucket '{bucket}' already exists.")
-        except S3Error as e:
-            print(f"Error creating bucket '{bucket}': {e}")
+    def create_buckets(self):
+        if not self.client:
+            raise RuntimeError("Minio client is not initialized.")
+        for bucket in self.buckets:
+            try:
+                if not self.client.bucket_exists(bucket):
+                    self.client.make_bucket(bucket)
+                    logging.info(f"Bucket '{bucket}' created.")
+                else:
+                    logging.info(f"Bucket '{bucket}' already exists.")
+            except S3Error as e:
+                logging.error(f"Failed to create bucket '{bucket}': {e}")
 
-
-# ==== MAIN ====
-def main():
-    MINIO_HOST = "minio"
-    MINIO_PORT = 9000
-    ACCESS_KEY = "minio"
-    SECRET_KEY = "minio123"
-    BUCKETS = ["lakehouse"]
-
-    try:
-        wait_for_service(MINIO_HOST, MINIO_PORT)
-        client = get_minio_client(host=MINIO_HOST, port=MINIO_PORT, username=ACCESS_KEY, password=SECRET_KEY)
-        create_buckets(client, BUCKETS)
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-
-
+ 
 if __name__ == "__main__":
-    main()
+    manager = MinioManager()
+    manager.create_buckets()

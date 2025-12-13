@@ -5,10 +5,10 @@ USER root
 
 # Install prerequisites
 RUN apt-get update && \
-    apt-get install -y curl openssh-server sudo  && \
+    apt-get install -y curl openssh-server sudo && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pandas==2.0.3 pyarrow==17.0.0
+RUN pip install --no-cache-dir pandas==2.0.3 pyarrow==17.0.0 numpy==1.24.4
 
 # Jars for Spark to work with Kafka, MinIO, Iceberg
 WORKDIR /tmp/jars
@@ -28,7 +28,6 @@ RUN curl -L -O https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0
 RUN mkdir -p /opt/spark/logs && \
     chown -R 1001:1001 /opt/spark
 
-
 # Set user for SSH connections
 # user 1001 is the default user for spark, but it doesn't have a name
 # set password to spark_user
@@ -36,8 +35,7 @@ RUN mkdir -p /opt/spark/logs && \
 RUN useradd -u 1001 -m spark_user && \
     echo spark_user:spark_pass | chpasswd && \
     usermod -aG sudo spark_user
-
-    
+        
 # Switch back
 WORKDIR /opt/spark/app
 USER spark_user

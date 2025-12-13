@@ -171,9 +171,33 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
     low DOUBLE,
     close DOUBLE,
     volume BIGINT,
+    -- Return
+    return DOUBLE,
+    -- Candle metrics
+    range DOUBLE,
+    body DOUBLE,
+    upper_wick DOUBLE,
+    lower_wick DOUBLE,
+    body_ratio DOUBLE,
+    upper_ratio DOUBLE,
+    lower_ratio DOUBLE,
+    is_green INT,
+    -- EMA
+    ema_10 DOUBLE,
     ema_20 DOUBLE,
-    ema_50 DOUBLE,
-    ema_200 DOUBLE,
+    close_vs_ema10 DOUBLE,
+    close_vs_ema20 DOUBLE,
+    -- RSI
     rsi_14 DOUBLE,
+    rsi_14_scaled DOUBLE,
+    -- Volume metrics
+    vol_ema_5 BIGINT,
+    vol_ema_10 BIGINT,
+    rvol_5 DOUBLE,
+    rvol_10 DOUBLE,
+    -- Labels
+    label_1 INT,
+    label_2 INT,
+    label_3 INT,
     ingest_timestamp TIMESTAMP WITH TIME ZONE
 );

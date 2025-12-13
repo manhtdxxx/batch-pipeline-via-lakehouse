@@ -3,6 +3,7 @@
 from _silver_pipeline import SilverPipeline
 from pyspark.sql.types import StructType, StructField, StringType, LongType, DateType, TimestampType, DoubleType
 
+
 class CompanyEventTransformer(SilverPipeline):
     SCHEMA = StructType([
         StructField("id", StringType(), True),

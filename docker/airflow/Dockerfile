@@ -11,8 +11,7 @@ RUN apt-get update && \
 USER airflow
 
 RUN pip install --no-cache-dir \
-    pandas==2.1.0 \
-    confluent-kafka==2.2.0 \
+    psycopg2-binary==2.9.9 \
     apache-airflow-providers-ssh==3.2.0
 
 

@@ -3,6 +3,7 @@
 from _silver_pipeline import SilverPipeline
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, LongType, TimestampType
 
+
 class QuarterlyRatioTransformer(SilverPipeline):
     SCHEMA = StructType([
         StructField("symbol", StringType(), True),

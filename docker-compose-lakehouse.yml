@@ -3,20 +3,20 @@ services:
     image: minio/minio:latest
     container_name: minio
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
     ports:
       - "9000:9000"
       - "9001:9001"
+    command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
     networks:
       - common-net
 
   metastore-db:
-    image: postgres:11-alpine
+    image: postgres:15-alpine
     container_name: metastore-db
     restart: unless-stopped
     environment:
@@ -26,7 +26,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - metastore-data:/var/lib/postgresql/data
+      - metastore-db:/var/lib/postgresql/data
     networks:
       - common-net
 
@@ -36,11 +36,11 @@ services:
       dockerfile: Dockerfile
     image: my-hive
     container_name: hive-metastore
+    restart: unless-stopped
     depends_on:
       - metastore-db
       - minio
       - minio-init
-    restart: unless-stopped
     ports:
       - "9083:9083"
     networks:
@@ -49,10 +49,10 @@ services:
   trino:
     image: trinodb/trino:476
     container_name: trino
+    restart: unless-stopped
     depends_on:
       - hive-metastore
       - minio
-    restart: unless-stopped
     ports:
       - "8080:8080"
     volumes:
@@ -64,9 +64,9 @@ services:
   minio-init:
     image: python:3.10-slim
     container_name: minio-init
+    restart: "no"
     depends_on:
       - minio
-    restart: "no"
     volumes:
       - ./docker/init/minio_init.py:/init/minio_init.py
     command: >
@@ -77,8 +77,8 @@ services:
 volumes:
   minio-data:
     name: minio-data
-  metastore-data:
-    name: metastore-data
+  metastore-db:
+    name: metastore-db
 
 networks:
   common-net:

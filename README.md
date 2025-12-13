@@ -71,14 +71,15 @@ batch-pipeline-via-lakehouse/
 
 Before starting, please ensure you have:
 
-- Git.
-- VS Code installed to open project.
-- Docker Desktop installed and running.
-- DBeaver installed to connect to Trino to query data from Lakehouse.
+- VS Code
+- Git
+- Docker Desktop
+- DBeaver
+- Power BI (downloaded from Website, not from Microsoft Store)
 
 ## 4.2 Setup & Initialization
 
-**Step 1:** Before running the pipeline, make sure `make` is installed. On Windows, you install Chocolatey first and then install Make:
+**Step 1 (Optional):** Before running the pipeline, make sure `make` is installed. On Windows, you install Chocolatey first and then install Make:
 
 ```powershell
 # Install Chocolatey (MUST run in PowerShell as Administrator)
@@ -102,8 +103,8 @@ git clone https://github.com/manhtdxxx/batch-pipeline-via-lakehouse.git
 ```bash
 # Open project in VSCode & navigate to hive/jars folder
 cd docker/hive/jars
-# Run Makefile to install (MUST run in Git Bash)
-make download
+# Run bash script to download hadoop and hive locally to build image (MUST run in Git Bash)
+bash download_hadoop_and_hive.sh
 ```
 
 **Step 4:** Set up the whole architecture through Docker:
@@ -130,13 +131,22 @@ make all-up
   - Password: airflow
 - **Spark Master UI:** http://localhost:8082
 - **Spark Worker 1 UI:** http://localhost:8083
+- **MLFlow UI:** http://localhost:5000
 
 ### Database / SQL Client
 
-- **Postgres:** localhost:5432 (connect via DBeaver)
+- **Postgres (Hive Metastore):** localhost:5432 (connect via DBeaver)
   - User: hive
   - Password: hive
   - Database: metastore
+- **Postgres (Airflow):** localhost:5433 (connect via DBeaver)
+  - User: airflow
+  - Password: airflow
+  - Database: airflow
+- **Postgres (MLFlow):** localhost:5434 (connect via DBeaver)
+  - User: mlflow
+  - Password: mlflow
+  - Database: mlflow
 - **Trino:** localhost:8080 (connect via DBeaver)
   - User: trino
   - Password:
@@ -162,7 +172,7 @@ make trino-init
 **3.1** Before running the batch pipeline in Airflow, you need to **set up SSH connection** between the Airflow container and the Spark container:
 
 ```bash
-make airflow-ssh
+make airflow-ssh-spark
 ```
 
 **3.2** After setting up the SSH connection, access the Airflow UI to trigger the DAG:
@@ -185,8 +195,8 @@ Power BI does not include Trino support by default; a custom connector must be s
 
 ![Risk & Return](dashboard/risk_return.png)
 
-
 **⚠️ Dashboard still ongoing**
 
 ---
+
 © 2025 manhtdxxx — All rights reserved.
