@@ -11,4 +11,7 @@ echo ">>> Starting MLflow server..."
 exec mlflow server \
     --backend-store-uri "$MLFLOW_BACKEND_STORE_URI" \
     --artifacts-destination "$MLFLOW_ARTIFACTS_DESTINATION" \
-    --host 0.0.0.0 --port 5000
+    --host 0.0.0.0 \
+    --port 5000 \
+    --allowed-hosts '*' \
+    --cors-allowed-origins '*'

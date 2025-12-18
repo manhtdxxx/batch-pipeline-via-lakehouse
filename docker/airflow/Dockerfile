@@ -7,7 +7,7 @@ RUN apt-get update && \
     apt-get install -y openssh-client sshpass && \
     rm -rf /var/lib/apt/lists/*
 
-    
+
 USER airflow
 
 RUN pip install --no-cache-dir \

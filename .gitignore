@@ -29,6 +29,7 @@ build/
 **/*checkpoint*/
 
 *.txt
+!requirements.txt
 
 data/**
 !data/*.py

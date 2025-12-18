@@ -34,14 +34,14 @@ class FactDailyOHLCV:
             "open", "high", "low", "close", "volume",
             "return",
             "range", "body", "upper_wick", "lower_wick", "body_ratio", "upper_ratio", "lower_ratio", "is_green",
-            "ema_10", "ema_20", "close_vs_ema10", "close_vs_ema20",
+            "ema_10", "ema_20", "ema_10_dist_pct", "ema_20_dist_pct",
             "rsi_14", "rsi_14_scaled",
-            "vol_ema_5", "vol_ema_10", "rvol_5", "rvol_10",
-            "label_1", "label_2", "label_3",
+            "vol_ema_10", "rvol_10",
+            "pct_change_std", "label_1", "label_2", "label_3",
             "ingest_timestamp"
         ]
 
-    def _read_days_ago_from_gold(self, gold_table: str, length: int = 60, spark: SparkSession = None) -> DataFrame:
+    def _read_days_ago_from_gold(self, gold_table: str, length: int = 30, spark: SparkSession = None) -> DataFrame:
         self.logger.info(f"Reading last {length} days per symbol from {gold_table}...")
         query = f"""
             SELECT * FROM (
@@ -77,14 +77,13 @@ class FactDailyOHLCV:
             StructField("is_green", IntegerType()),
             StructField("ema_10", DoubleType()),
             StructField("ema_20", DoubleType()),
-            StructField("close_vs_ema10", DoubleType()),
-            StructField("close_vs_ema20", DoubleType()),
+            StructField("ema_10_dist_pct", DoubleType()),
+            StructField("ema_20_dist_pct", DoubleType()),
             StructField("rsi_14", DoubleType()),
             StructField("rsi_14_scaled", DoubleType()),
-            StructField("vol_ema_5", LongType()),
             StructField("vol_ema_10", LongType()),
-            StructField("rvol_5", DoubleType()),
             StructField("rvol_10", DoubleType()),
+            StructField("pct_change_std", DoubleType()),
             StructField("label_1", IntegerType()),
             StructField("label_2", IntegerType()),
             StructField("label_3", IntegerType())
@@ -111,8 +110,8 @@ class FactDailyOHLCV:
             # EMA
             pdf["ema_10"] = pdf["close"].ewm(span=10, adjust=False).mean()
             pdf["ema_20"] = pdf["close"].ewm(span=20, adjust=False).mean()
-            pdf["close_vs_ema10"] = (pdf["close"] - pdf["ema_10"]) / pdf["ema_10"]
-            pdf["close_vs_ema20"] = (pdf["close"] - pdf["ema_20"]) / pdf["ema_20"]
+            pdf["ema_10_dist_pct"] = (pdf["close"] - pdf["ema_10"]) / pdf["ema_10"]
+            pdf["ema_20_dist_pct"] = (pdf["close"] - pdf["ema_20"]) / pdf["ema_20"]
 
             # RSI
             delta = pdf["close"].diff()
@@ -125,28 +124,25 @@ class FactDailyOHLCV:
             pdf["rsi_14_scaled"] = pdf["rsi_14"] / 100.0
 
             # Volume metrics
-            pdf["vol_ema_5"] = pdf["volume"].ewm(span=5, adjust=False).mean()
             pdf["vol_ema_10"] = pdf["volume"].ewm(span=10, adjust=False).mean()
-            pdf["rvol_5"] = pdf["volume"] / pdf["vol_ema_5"]
             pdf["rvol_10"] = pdf["volume"] / pdf["vol_ema_10"]
 
             # Label calculation
-            std_window = 10
-            pct_change_std = pdf['close'].pct_change().rolling(std_window).std()
-            factors = [0.75, 1.0, 1.25]
+            std_window = 20
+            pdf['pct_change_std'] = pdf['close'].pct_change().rolling(std_window).std()
+            
             future_window = 3
             future_return = (pdf['close'].shift(-future_window) - pdf['close']) / pdf['close']
 
-            for idx, factor in enumerate(factors, start=1):
-                threshold = factor * pct_change_std
-                pdf[f"label_{idx}"] = np.where(
-                    future_return.isna(), np.nan,
-                    np.where(future_return > threshold, 2,
-                             np.where(future_return < -threshold, 0, 1))
-                )
+            factors = [0.4, 0.5, 0.6]
+            for idx, k in enumerate(factors, start=1):
+                threshold = k * (np.sqrt(future_window) * pdf['pct_change_std'])
+                pdf[f"label_{idx}"] = np.where(future_return.isna(), np.nan, 
+                                               np.where(future_return > threshold, 2,
+                                                        np.where(future_return < -threshold, 0, 
+                                                                 1)))
 
             return pdf
-        
         return calc
 
 
@@ -167,7 +163,7 @@ class FactDailyOHLCV:
 
         df = handler.add_surrogate_key(df, key_cols=self.business_keys, sk_col_name="id", use_hash=False)
 
-        df_ago = self._read_days_ago_from_gold(gold_table=self.gold_table, length=60, spark=handler.spark)
+        df_ago = self._read_days_ago_from_gold(gold_table=self.gold_table, length=30, spark=handler.spark)
         df_union = df.unionByName(df_ago) if not df_ago.rdd.isEmpty() else df
 
         df_union = df_union.groupby("symbol").apply(self._calc_metrics())

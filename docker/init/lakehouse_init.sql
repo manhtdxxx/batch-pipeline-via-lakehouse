@@ -185,17 +185,16 @@ CREATE TABLE IF NOT EXISTS iceberg.gold.fact_daily_ohlcv (
     -- EMA
     ema_10 DOUBLE,
     ema_20 DOUBLE,
-    close_vs_ema10 DOUBLE,
-    close_vs_ema20 DOUBLE,
+    ema_10_dist_pct DOUBLE,
+    ema_20_dist_pct DOUBLE,
     -- RSI
     rsi_14 DOUBLE,
     rsi_14_scaled DOUBLE,
     -- Volume metrics
-    vol_ema_5 BIGINT,
     vol_ema_10 BIGINT,
-    rvol_5 DOUBLE,
     rvol_10 DOUBLE,
     -- Labels
+    pct_change_std DOUBLE,
     label_1 INT,
     label_2 INT,
     label_3 INT,
