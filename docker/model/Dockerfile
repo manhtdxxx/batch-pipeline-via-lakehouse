@@ -10,11 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libblas-dev \
     liblapack-dev \
     git \
-    curl \
     sudo \
     openssh-server \
     && rm -rf /var/lib/apt/lists/*
-
 
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --no-cache-dir \

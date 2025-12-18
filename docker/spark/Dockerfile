@@ -1,16 +1,15 @@
 FROM apache/spark:3.5.0
 
-# Spark Image has their own user 1001, switch to root user
 USER root
 
-# Install prerequisites
 RUN apt-get update && \
     apt-get install -y curl openssh-server sudo && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir pandas==2.0.3 pyarrow==17.0.0 numpy==1.24.4
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Jars for Spark to work with Kafka, MinIO, Iceberg
+# Download Spark / Kafka / Iceberg jars
 WORKDIR /tmp/jars
 RUN curl -L -O https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0-10_2.12/3.5.0/spark-sql-kafka-0-10_2.12-3.5.0.jar && \
     curl -L -O https://repo1.maven.org/maven2/org/apache/spark/spark-token-provider-kafka-0-10_2.12/3.5.0/spark-token-provider-kafka-0-10_2.12-3.5.0.jar && \
@@ -23,19 +22,19 @@ RUN curl -L -O https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0
     mv *.jar /opt/spark/jars/ && \
     rm -rf /tmp/jars
 
+# Config files
+COPY conf/spark-defaults.conf /opt/spark/conf/spark-defaults.conf
+COPY conf/log4j2.properties /opt/spark/conf/log4j2.properties
 
-# Create logs folder and fix permissions
+# Spark logs & permissions
 RUN mkdir -p /opt/spark/logs && \
-    chown -R 1001:1001 /opt/spark
+    chown -R 1001:1001 /opt/spark && \
+    mkdir -p /var/run/sshd
 
-# Set user for SSH connections
-# user 1001 is the default user for spark, but it doesn't have a name
-# set password to spark_user
-# add spark_user to sudo group (let it execute command as root user)
+# Create spark_user (UID 1001) with sudo privileges
 RUN useradd -u 1001 -m spark_user && \
     echo spark_user:spark_pass | chpasswd && \
     usermod -aG sudo spark_user
-        
-# Switch back
+
 WORKDIR /opt/spark/app
 USER spark_user

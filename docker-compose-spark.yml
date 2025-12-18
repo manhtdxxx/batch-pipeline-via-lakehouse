@@ -15,7 +15,6 @@ services:
       tail -f /dev/null
       "
     volumes:
-      - ./docker/spark/conf:/opt/spark/conf
       - ./src/elt:/opt/spark/app
       - ./data:/opt/spark/data
     networks:
