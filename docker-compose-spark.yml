@@ -10,7 +10,7 @@ services:
       - "8082:8080" # web UI for master
     command: >
       /bin/bash -c "
-      echo spark_pass | sudo -S service ssh start &&
+      echo manhtdxxx | sudo -S service ssh start &&
       /opt/spark/sbin/start-master.sh &&
       tail -f /dev/null
       "
@@ -38,7 +38,7 @@ services:
       - "8083:8081" # web UI for worker-1
     command: >
       /bin/bash -c "
-      echo spark_pass | sudo -S service ssh start &&
+      echo manhtdxxx | sudo -S service ssh start &&
       /opt/spark/sbin/start-worker.sh spark://spark-master:7077 &&
       tail -f /dev/null
       "

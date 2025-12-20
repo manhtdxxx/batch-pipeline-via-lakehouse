@@ -26,15 +26,13 @@ RUN curl -L -O https://repo1.maven.org/maven2/org/apache/spark/spark-sql-kafka-0
 COPY conf/spark-defaults.conf /opt/spark/conf/spark-defaults.conf
 COPY conf/log4j2.properties /opt/spark/conf/log4j2.properties
 
-# Spark logs & permissions
-RUN mkdir -p /opt/spark/logs && \
-    chown -R 1001:1001 /opt/spark && \
-    mkdir -p /var/run/sshd
-
-# Create spark_user (UID 1001) with sudo privileges
-RUN useradd -u 1001 -m spark_user && \
-    echo spark_user:spark_pass | chpasswd && \
-    usermod -aG sudo spark_user
+# Create user for running Spark and SSH
+RUN useradd -u 1001 -m manh && \
+    echo manh:manhtdxxx | chpasswd && \
+    usermod -aG sudo manh && \
+    mkdir -p /var/run/sshd && \
+    mkdir -p /opt/spark/logs && \
+    chown -R manh:manh /opt/spark
 
 WORKDIR /opt/spark/app
-USER spark_user
+USER manh

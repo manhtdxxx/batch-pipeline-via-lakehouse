@@ -120,6 +120,7 @@ class LSTMPreprocessor:
             "num_timesteps": self.timesteps,
             "num_features": len(self.features),
             "features": self.features,
+            "label": self.label,
             "num_classes": self.num_classes,
             "num_samples": {
                 "train": X_train.shape[0],

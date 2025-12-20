@@ -30,6 +30,24 @@ mlflow-up:
 mlflow-down:
 	docker compose -f docker-compose.yml down mlflow mlflow-db
 
+model-up:
+	docker compose -f docker-compose.yml up -d model 
+
+model-down:
+	docker compose -f docker-compose.yml down model
+
+api-up:
+	docker compose -f docker-compose.yml up -d api
+
+api-down:
+	docker compose -f docker-compose.yml down api
+
+ui-up:
+	docker compose -f docker-compose.yml up -d ui
+
+ui-down:
+	docker compose -f docker-compose.yml down ui
+	
 spark-bash:
 	docker exec -it spark-master bash
 
@@ -39,11 +57,14 @@ mlflow-bash:
 model-bash:
 	docker exec -it model bash
 
+ui-bash:
+	docker exec -it ui bash
+
 trino-init:
 	docker exec -it trino bash -c "trino --server localhost:8080 --catalog iceberg --file /init/lakehouse_init.sql"
 
 airflow-ssh-spark:
-	docker exec -it airflow bash -c "sshpass -p 'spark_pass' ssh-copy-id -o StrictHostKeyChecking=no -i /home/airflow/.ssh/id_ecdsa.pub spark_user@spark-master"
+	docker exec -it airflow bash -c "sshpass -p 'manhtdxxx' ssh-copy-id -o StrictHostKeyChecking=no -i /home/airflow/.ssh/id_ecdsa.pub manh@spark-master"
 
 airflow-ssh-model:
-	docker exec -it airflow bash -c "sshpass -p 'model_pass' ssh-copy-id -o StrictHostKeyChecking=no -i /home/airflow/.ssh/id_ecdsa.pub model_user@model"
+	docker exec -it airflow bash -c "sshpass -p 'manhtdxxx' ssh-copy-id -o StrictHostKeyChecking=no -i /home/airflow/.ssh/id_ecdsa.pub manh@model"

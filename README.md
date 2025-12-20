@@ -9,7 +9,7 @@
 
 # 📌 1. Introduction
 
-This project demonstrates a **Lakehouse architecture** built on **Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for analytics and BI use cases.
+This project demonstrates a **Lakehouse architecture** built on **Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for analytics and ML model.
 
 **Data Source:** Data fetched from **_VCI_** through **_VNStock - Python Library_**
 
@@ -40,27 +40,29 @@ This project demonstrates a **Lakehouse architecture** built on **Iceberg tables
 batch-pipeline-via-lakehouse/
 │
 ├── docker/                            # Docker setup
-│   ├── init/                            # Initialization scripts in containers
-│   ├── hive/                            # Hive metastore configuration + Dockerfile
-│   ├── trino/                           # Trino configuration
-│   ├── spark/                           # Spark configuration + Dockerfile
 │   ├── airflow/                         # Airflow Dockerfile
-│   ├── superset/                        # Superset configuration + Dockerfile
+│   ├── hive/                            # Hive metastore configuration + Dockerfile
+│   ├── init/                            # Initialization scripts in containers
+│   ├── ml-app/                          # Dockerfile to run MLFlow Server, FastAPI, Streamlit UI
+│   ├── spark/                           # Spark configuration + Dockerfile
+│   ├── trino/                           # Trino configuration
 │
 ├── data/                              # Raw datasets
-├── experiments/                       # Notebooks and scripts for testing pipelines and data exploration
+├── notebooks/                         # Notebooks for testing pipeline, data exploration, and training model
 ├── src/                               # Main scripts
 │   ├── dags/                            # Airflow DAG scripts
 │   ├── elt/                             # ELT scripts
 │       ├── bronze/                        # Bronze layer scripts – load raw data
 │       ├── silver/                        # Silver layer scripts – clean/enrich data
 │       ├── gold/                          # Gold layer scripts – aggregated / analytics-ready
+│   ├── model/                           # Scripts for preprocessing, training, evaluation, promoting model to MLFlow
+│   ├── serving/                         # Scripts for deploying model (using FastAPI & Streamlit)
 │
 ├── readme/                            # Documentation, diagrams, notes
 │
-├── docker-compose-lakehouse.yml       # Docker Compose for the Lakehouse stack (MinIO, Hive Metastore, Postgres, Trino)
-├── docker-compose-spark.yml           # Docker Compose for Spark cluster
-├── docker-compose.yml                 # Docker Compose for Airflow, Superset, ...
+├── docker-compose-lakehouse.yml       # Docker Compose for the Lakehouse stack (MinIO, Hive Metastore, Trino)
+├── docker-compose-spark.yml           # Docker Compose for Spark cluster (Spark Master, Spark Worker(s))
+├── docker-compose.yml                 # Docker Compose for Airflow, MLFlow, Model, API, UI
 ```
 
 ---
@@ -132,9 +134,13 @@ make all-up
 - **Spark Master UI:** http://localhost:8082
 - **Spark Worker 1 UI:** http://localhost:8083
 - **MLFlow UI:** http://localhost:5000
+- **Streamlit UI:** http://localhost:8501
 
 ### Database / SQL Client
 
+- **Trino:** localhost:8080 (connect via DBeaver)
+  - User: trino
+  - Password:
 - **Postgres (Hive Metastore):** localhost:5432 (connect via DBeaver)
   - User: hive
   - Password: hive
@@ -147,9 +153,6 @@ make all-up
   - User: mlflow
   - Password: mlflow
   - Database: mlflow
-- **Trino:** localhost:8080 (connect via DBeaver)
-  - User: trino
-  - Password:
 
 ## 4.4 Run the pipeline
 

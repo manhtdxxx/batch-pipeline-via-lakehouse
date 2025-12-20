@@ -8,13 +8,13 @@ services:
     depends_on:
       - airflow-db
     ports:
-      - 8081:8080
+      - "8081:8080"
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-db:5432/airflow
       - AIRFLOW_CONN_SPARK_CONN=spark://spark-master:7077 # if using SparkSubmitOperator
-      - AIRFLOW_CONN_SSH_SPARK=ssh://spark_user:spark_pass@spark-master:22 # if using SSHOperator
-      - AIRFLOW_CONN_SSH_MODEL=ssh://model_user:model_pass@model:22
+      - AIRFLOW_CONN_SSH_SPARK=ssh://manh:manhtdxxx@spark-master:22 # if using SSHOperator
+      - AIRFLOW_CONN_SSH_MODEL=ssh://manh:manhtdxxx@model:22
     command: >
       bash -c "
       airflow db migrate &&
@@ -29,12 +29,11 @@ services:
 
   mlflow:
     build:
-      context: ./docker/mlflow
+      context: ./docker/ml-app
       dockerfile: Dockerfile
-    image: my-mlflow
+    image: my-ml-app:latest
     container_name: mlflow
     depends_on:
-      # - minio
       - mlflow-db
     environment:
       MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@mlflow-db:5432/mlflow
@@ -46,12 +45,20 @@ services:
       AWS_REGION: us-east-1
     ports:
       - "5000:5000"
+    volumes:
+      - ./docker/ml-app/entrypoint.sh:/entrypoint.sh
+    command: >
+      /bin/bash -c "
+      echo manhtdxxx | sudo -S chmod +x /entrypoint.sh &&
+      /entrypoint.sh
+      "
     networks:
       - common-net
 
   airflow-db:
     image: postgres:15-alpine
     container_name: airflow-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
@@ -66,6 +73,7 @@ services:
   mlflow-db:
     image: postgres:15-alpine
     container_name: mlflow-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: mlflow
       POSTGRES_PASSWORD: mlflow
@@ -78,18 +86,51 @@ services:
       - common-net
 
   model:
-    build:
-      context: ./docker/model
-      dockerfile: Dockerfile
-    image: my-model
+    image: my-ml-app:latest
     container_name: model
     command: >
       /bin/bash -c "
-      echo model_pass | sudo -S service ssh start &&
+      echo manhtdxxx | sudo -S service ssh start &&
       tail -f /dev/null
       "
     volumes:
       - ./src/model:/app
+    networks:
+      - common-net
+
+  api:
+    image: my-ml-app:latest
+    container_name: api
+    depends_on:
+      - mlflow
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      # MLFlow will automatically detect and use these ENVs
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      AWS_REGION: us-east-1
+    volumes:
+      - ./src/serving/api.py:/app/api.py
+    command: >
+      uvicorn api:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    networks:
+      - common-net
+
+  ui:
+    image: my-ml-app:latest
+    container_name: ui
+    depends_on:
+      - api
+    volumes:
+      - ./src/serving/ui.py:/app/ui.py
+      - ./src/model/trino_utils.py:/app/trino_utils.py
+    command: >
+      streamlit run ui.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
     networks:
       - common-net
 
