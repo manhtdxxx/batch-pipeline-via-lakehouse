@@ -45,11 +45,8 @@ services:
       AWS_REGION: us-east-1
     ports:
       - "5000:5000"
-    volumes:
-      - ./docker/ml-app/entrypoint.sh:/entrypoint.sh
     command: >
       /bin/bash -c "
-      echo manhtdxxx | sudo -S chmod +x /entrypoint.sh &&
       /entrypoint.sh
       "
     networks:
