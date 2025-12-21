@@ -232,6 +232,7 @@ After the pipeline completes:
 
 ![Streamlit App](readme/streamlit.png)
 
+> 💀 My model just hit an avg F1-score of 38%… yep, it’s officially trash.
 ---
 
 © 2025 manhtdxxx — All rights reserved.
