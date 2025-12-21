@@ -14,14 +14,14 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-API_URL = "http://localhost:8000/predict"
+API_URL = "http://api:8000/predict"
 FEATURES = [
     "return", "body_ratio", "upper_ratio", "lower_ratio", "is_green",
     "ema_10_dist_pct", "ema_20_dist_pct", "rsi_14_scaled", "rvol_10",
 ]
 TIMESTEPS = 10
 
-trino = TrinoUtils(port="localhost",catalog="iceberg", schema="gold")
+trino = TrinoUtils(catalog="iceberg", schema="gold")
 st.set_page_config(layout="wide")
 
 # --------------------------------------------------
@@ -165,7 +165,6 @@ st.markdown("<br>", unsafe_allow_html=True)
 # PLOTLY CANDLESTICK (ZOOM / PAN)
 # --------------------------------------------------
 df_ohlc = df_ohlc.sort_values("date").reset_index(drop=True)
-
 fig = go.Figure(
     data=[
         go.Candlestick(
