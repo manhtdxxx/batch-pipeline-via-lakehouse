@@ -3,8 +3,10 @@ import pandas as pd
 import numpy as np
 import requests
 import logging
-import plotly.graph_objects as go
 from trino_utils import TrinoUtils
+import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+import datetime
 
 # --------------------------------------------------
 # CONFIG
@@ -162,32 +164,37 @@ with center:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --------------------------------------------------
-# PLOTLY CANDLESTICK (ZOOM / PAN)
+# PRICE CHART   
 # --------------------------------------------------
-data = {
-    "date": pd.to_datetime([
-        "2022-01-04","2022-01-05","2022-01-06","2022-01-07","2022-01-10"
-    ]),
-    "open": [16.32,16.11,15.71,15.9,15.48],
-    "high": [16.32,16.11,15.95,15.92,15.66],
-    "low": [16.06,15.78,15.52,15.62,15.45],
-    "close": [16.13,15.8,15.83,15.62,15.48]
-}
-df = pd.DataFrame(data)
+min_date = df_ohlc['date'].min().date()
+max_date = df_ohlc['date'].max().date()
+start_date, end_date = st.sidebar.slider(
+    "Select date range",
+    min_value=min_date,
+    max_value=max_date,
+    value=(min_date, max_date),
+    format="YYYY-MM-DD"
+)
 
-fig = go.Figure(data=[go.Candlestick(
-    x=df['date'],
-    open=df['open'],
-    high=df['high'],
-    low=df['low'],
-    close=df['close'],
-    increasing_line_color='green',
-    decreasing_line_color='red'
-)])
+start_date = pd.to_datetime(start_date)
+end_date = pd.to_datetime(end_date)
+df_filtered = df_ohlc[(df_ohlc['date'] >= start_date) & (df_ohlc['date'] <= end_date)]
 
-fig.update_layout(height=600, xaxis_rangeslider_visible=True, template='plotly_white')
-st.plotly_chart(fig, use_container_width=True)
+# Vẽ chart dựa trên df_filtered
+fig, ax = plt.subplots(figsize=(12,6))
+fig.patch.set_facecolor('#0E1117')
+ax.set_facecolor('#0E1117')
 
+ax.plot(df_filtered['date'], df_filtered['close'], color='#00FFFF', linewidth=2, label='Close Price')
 
-st.write(df_ohlc.head())
-st.write(df_ohlc.dtypes)
+ax.set_xlabel("Date", color='white', fontsize=12)
+ax.set_ylabel("Price (VND)", color='white', fontsize=12)
+ax.set_title(f"{company_name} ({selected_symbol}) - Close Price", color='white', fontsize=14)
+
+ax.tick_params(axis='x', colors='white')
+ax.tick_params(axis='y', colors='white')
+
+ax.grid(True, color='#555555', linestyle='--')
+ax.legend(facecolor='#0E1117', edgecolor='white', labelcolor='white')
+
+st.pyplot(fig)
