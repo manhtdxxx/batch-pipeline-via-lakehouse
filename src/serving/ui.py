@@ -164,33 +164,28 @@ st.markdown("<br>", unsafe_allow_html=True)
 # --------------------------------------------------
 # PLOTLY CANDLESTICK (ZOOM / PAN)
 # --------------------------------------------------
-df_ohlc = df_ohlc.sort_values("date").reset_index(drop=True)
-fig = go.Figure(
-    data=[
-        go.Candlestick(
-            x=df_ohlc["date"],
-            open=df_ohlc["open"],
-            high=df_ohlc["high"],
-            low=df_ohlc["low"],
-            close=df_ohlc["close"],
-            increasing_line_color="#2ecc71",
-            decreasing_line_color="#e74c3c",
-        )
-    ]
-)
+data = {
+    "date": pd.to_datetime([
+        "2022-01-04","2022-01-05","2022-01-06","2022-01-07","2022-01-10"
+    ]),
+    "open": [16.32,16.11,15.71,15.9,15.48],
+    "high": [16.32,16.11,15.95,15.92,15.66],
+    "low": [16.06,15.78,15.52,15.62,15.45],
+    "close": [16.13,15.8,15.83,15.62,15.48]
+}
+df = pd.DataFrame(data)
 
-fig.update_layout(
-    height=600,
-    margin=dict(l=20, r=20, t=20, b=20),
-    xaxis=dict(
-        rangeslider=dict(visible=True),
-        type="date"
-    ),
-    yaxis=dict(fixedrange=False),
-    dragmode="pan",
-    template="plotly_dark"
-)
+fig = go.Figure(data=[go.Candlestick(
+    x=df['date'],
+    open=df['open'],
+    high=df['high'],
+    low=df['low'],
+    close=df['close'],
+    increasing_line_color='green',
+    decreasing_line_color='red'
+)])
 
+fig.update_layout(height=600, xaxis_rangeslider_visible=True, template='plotly_white')
 st.plotly_chart(fig, use_container_width=True)
 
 

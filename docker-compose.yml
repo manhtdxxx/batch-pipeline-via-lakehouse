@@ -141,7 +141,6 @@ services:
       - ./src/model/trino_utils.py:/app/trino_utils.py
     command: >
       /bin/bash -c "
-      pip install plotly==6.1.0 &&
       streamlit run ui.py --server.address 0.0.0.0 --server.port 8501
       "
     ports:

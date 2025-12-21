@@ -198,7 +198,14 @@ Power BI does not include Trino support by default; a custom connector must be s
 
 ![Risk & Return](dashboard/risk_return.png)
 
-**⚠️ Dashboard still ongoing**
+### Step 5: Run ML Pipeline
+
+```bash
+# Access the container for running ML pipeline
+make model-bash
+# After access, run command to trigger pipeline
+python run_pipeline.py
+```
 
 ---
 

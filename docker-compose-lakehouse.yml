@@ -62,7 +62,7 @@ services:
       - common-net
 
   minio-init:
-    image: python:3.10-slim
+    image: python:3.10-bullseye
     container_name: minio-init
     restart: "no"
     depends_on:
