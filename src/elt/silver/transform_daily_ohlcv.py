@@ -45,7 +45,7 @@ class DailyOHLCVTransformer(SilverPipeline):
 
     def _read_latest_ohlcv(self) -> DataFrame:
         query = f"""
-            SELECT symbol, date, open, high, low, close, volume
+            SELECT symbol, date, open, high, low, close, volume, ingest_timestamp
             FROM (
                 SELECT *, ROW_NUMBER() OVER(PARTITION BY symbol ORDER BY date DESC) as rn
                 FROM {self.silver_table}    
@@ -72,12 +72,8 @@ class DailyOHLCVTransformer(SilverPipeline):
         df_all = df_all.withColumn("volume", coalesce(col("volume"), lit(0)))
 
         # exclude the row read from silver
-        df_filled = df_all.join(
-            df.select("symbol", "date"),
-            on=["symbol", "date"],
-            how="inner"
-        )
-        return df_filled
+        df_just_new = df_all.join(df.select("symbol", "date"), on=["symbol", "date"], how="inner")
+        return df_just_new
 
 
     def transform(self, df):

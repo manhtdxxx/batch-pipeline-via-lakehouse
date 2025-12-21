@@ -44,7 +44,8 @@ class FactDailyOHLCV:
     def _read_days_ago_from_gold(self, gold_table: str, length: int = 30, spark: SparkSession = None) -> DataFrame:
         self.logger.info(f"Reading last {length} days per symbol from {gold_table}...")
         query = f"""
-            SELECT * FROM (
+            SELECT symbol, date, open, high, low, close, volume, ingest_timestamp, id
+            FROM (
                 SELECT *,
                 ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) AS rn
                 FROM {gold_table}
@@ -168,8 +169,9 @@ class FactDailyOHLCV:
 
         df_union = df_union.groupby("symbol").apply(self._calc_metrics())
         df_union = df_union.select(*self.cols_order)
+        df_just_new = df_union.join(df.select("symbol", "date"), on=["symbol", "date"], how="inner")
 
-        handler.append_to_gold(df_union, gold_table=self.gold_table)
+        handler.append_to_gold(df_just_new, gold_table=self.gold_table)
         handler.stop()
         self.logger.info("Done all!")
 

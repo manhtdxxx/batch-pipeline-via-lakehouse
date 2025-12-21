@@ -54,6 +54,12 @@ services:
       "
     networks:
       - common-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   airflow-db:
     image: postgres:15-alpine
@@ -102,7 +108,8 @@ services:
     image: my-ml-app:latest
     container_name: api
     depends_on:
-      - mlflow
+      mlflow:
+        condition: service_healthy
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       # MLFlow will automatically detect and use these ENVs
@@ -112,8 +119,13 @@ services:
       AWS_REGION: us-east-1
     volumes:
       - ./src/serving/api.py:/app/api.py
+      - model_cache:/app/models
+    user: root
     command: >
-      uvicorn api:app --host 0.0.0.0 --port 8000
+      /bin/bash -c "
+      mkdir -p /app/models &&
+      uvicorn api:app --host 0.0.0.0 --port 8000 --workers 1
+      "
     ports:
       - "8000:8000"
     networks:
@@ -128,7 +140,10 @@ services:
       - ./src/serving/ui.py:/app/ui.py
       - ./src/model/trino_utils.py:/app/trino_utils.py
     command: >
-      streamlit run ui.py --server.port 8501 --server.address 0.0.0.0
+      /bin/bash -c "
+      pip install plotly==6.1.0 &&
+      streamlit run ui.py --server.address 0.0.0.0 --server.port 8501
+      "
     ports:
       - "8501:8501"
     networks:
@@ -139,6 +154,8 @@ volumes:
     name: airflow-db
   mlflow-db:
     name: mlflow-db
+  model_cache:
+    name: model-cache
 
 networks:
   common-net:

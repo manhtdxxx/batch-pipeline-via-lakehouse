@@ -136,7 +136,7 @@ make all-up
 - **MLFlow UI:** http://localhost:5000
 - **Streamlit UI:** http://localhost:8501
 
-### Database / SQL Client
+### SQL Access via DBeaver
 
 - **Trino:** localhost:8080 (connect via DBeaver)
   - User: trino
