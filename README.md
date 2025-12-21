@@ -9,16 +9,24 @@
 
 # 📌 1. Introduction
 
-This project demonstrates a **Lakehouse architecture** built on **Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for analytics and ML model.
+This project demonstrates a **Lakehouse architecture** built on **Iceberg tables**. Data is progressively refined through a **medallion architecture (Bronze → Silver → Gold)** for BI and ML use cases.
 
 **Data Source:** Data fetched from **_VCI_** through **_VNStock - Python Library_**
 
-**Key features of this project include:**
+### Key features of this project include:
 
-- **_Unified Data Storage_**: Combine the benefits of data lakes and data warehouses using a Lakehouse approach.
-- **_Batch ELT Pipeline_**: Capture and process data using Apache Spark, orchestrated by Apache Airflow.
-- **_Query & Analytics_**: Enable SQL querying on the Lakehouse using Trino and visualize insights with Power BI.
-- **_Containerized Architecture_**: All services (Lakehouse stack, Spark, Airflow) are orchestrated via Docker for easy setup and reproducibility.
+- **_Data Engineering (DE):_**
+  - Implement a unified Lakehouse that merges the flexibility of data lakes with the reliability of data warehouses using Iceberg tables.
+  - Develop batch ELT pipelines with Apache Spark, orchestrated via Apache Airflow.
+  - Refine raw data progressively across Bronze, Silver, and Gold layers for analytics and ML use cases.
+
+- **_Data Analytics (DA):_**
+  - Perform SQL-based querying on the Lakehouse through Trino.
+  - Create Power BI dashboards to visualize key metrics and support decision-making.
+
+- **_MLOps:_**
+  - Track, manage, and register ML models using MLflow.
+  - Deploy production-ready models via FastAPI and showcase results through an interactive Streamlit app.
 
 ---
 
@@ -199,13 +207,30 @@ Power BI does not include Trino support by default; a custom connector must be s
 ![Risk & Return](dashboard/risk_return.png)
 
 ### Step 5: Run ML Pipeline
-
+Inside the container named "model", trigger the ML pipeline:
 ```bash
 # Access the container for running ML pipeline
 make model-bash
 # After access, run command to trigger pipeline
 python run_pipeline.py
 ```
+
+The pipeline performs the following stages:
+1. **Preprocessing** – Clean and transform the raw data into a format suitable for training.
+2. **Training** – Train a model (e.g., LSTM) using the preprocessed data.
+3. **Evaluation** – Evaluate the model on validation/test data and generate a classification report.
+4. **Model Comparison** – Compare models registered in MLflow and pick the best-performing one for production deployment.
+
+![Registered Model](readme/registered_model.png)
+
+After the pipeline completes:
+- FastAPI automatically loads the best model from MLflow.
+- The API serves predictions to external applications.
+- Streamlit app interacts with the API for a quick demo of the prediction results.
+
+> ⚠️ Note: FastAPI will only load the model after MLflow is up and the model has been registered.
+
+![Streamlit App](readme/streamlit.png)
 
 ---
 
