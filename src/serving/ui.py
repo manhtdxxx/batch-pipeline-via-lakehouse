@@ -4,7 +4,6 @@ import numpy as np
 import requests
 import logging
 from trino_utils import TrinoUtils
-import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import datetime
 
@@ -62,44 +61,6 @@ company_name = df_company.loc[
 ].values[0]
 
 # --------------------------------------------------
-# READ FEATURE DATA (MODEL INPUT)
-# --------------------------------------------------
-df_feature = trino.read_table(
-    table="iceberg.gold.fact_daily_ohlcv",
-    columns=["date", *FEATURES],
-    filters=[f"symbol = '{selected_symbol}'"],
-    order_by="date DESC",
-    limit=TIMESTEPS
-)
-
-if df_feature.empty:
-    st.error("No feature data for this symbol")
-    st.stop()
-
-df_feature["date"] = pd.to_datetime(df_feature["date"])
-df_feature = df_feature.sort_values("date")
-
-X = df_feature[FEATURES].values
-
-if X.shape[0] < TIMESTEPS:
-    pad = np.zeros((TIMESTEPS - X.shape[0], len(FEATURES)))
-    X = np.vstack([pad, X])
-
-payload = {"inputs": [X.tolist()]}
-
-# --------------------------------------------------
-# CALL PREDICTION API
-# --------------------------------------------------
-with st.spinner("Predicting..."):
-    try:
-        res = requests.post(API_URL, json=payload, timeout=10)
-        res.raise_for_status()
-        probs = res.json()["predictions"][0]
-    except Exception as e:
-        st.error(f"Prediction API failed: {e}")
-        st.stop()
-
-# --------------------------------------------------
 # READ OHLC DATA
 # --------------------------------------------------
 df_ohlc = trino.read_table(
@@ -118,11 +79,68 @@ for col in ["open", "high", "low", "close"]:
     df_ohlc[col] = pd.to_numeric(df_ohlc[col], errors="coerce")
 
 df_ohlc = df_ohlc.dropna(subset=["open", "high", "low", "close"])
+
 df_ohlc = df_ohlc.sort_values("date")
 
 if df_ohlc.empty:
     st.error("All OHLC rows are NULL after cleaning")
     st.stop()
+
+# --------------------------------------------------
+# DATE SLIDER
+# --------------------------------------------------
+min_date = df_ohlc['date'].min().date()
+max_date = df_ohlc['date'].max().date()
+
+start_date, end_date = st.sidebar.slider(
+    "Select date range",
+    min_value=min_date,
+    max_value=max_date,
+    value=(min_date, max_date),
+    format="YYYY-MM-DD"
+)
+
+start_date = pd.to_datetime(start_date)
+end_date = pd.to_datetime(end_date)
+
+df_filtered = df_ohlc[(df_ohlc['date'] >= start_date) & (df_ohlc['date'] <= end_date)]
+
+# --------------------------------------------------
+# READ FEATURE DATA FOR PREDICTION (UP TO end_date)
+# --------------------------------------------------
+df_feature = trino.read_table(
+    table="iceberg.gold.fact_daily_ohlcv",
+    columns=["date", *FEATURES],
+    filters=[f"symbol = '{selected_symbol}'", f"date <= DATE '{end_date.date()}'"],
+    order_by="date DESC",
+    limit=TIMESTEPS
+)
+
+if df_feature.empty:
+    st.error("No feature data for this symbol up to selected end date")
+    st.stop()
+
+df_feature["date"] = pd.to_datetime(df_feature["date"])
+df_feature = df_feature.sort_values("date")
+
+X = df_feature[FEATURES].values
+if X.shape[0] < TIMESTEPS:
+    pad = np.zeros((TIMESTEPS - X.shape[0], len(FEATURES)))
+    X = np.vstack([pad, X])
+
+payload = {"inputs": [X.tolist()]}
+
+# --------------------------------------------------
+# CALL PREDICTION API
+# --------------------------------------------------
+with st.spinner("Predicting..."):
+    try:
+        res = requests.post(API_URL, json=payload, timeout=10)
+        res.raise_for_status()
+        probs = res.json()["predictions"][0]
+    except Exception as e:
+        st.error(f"Prediction API failed: {e}")
+        st.stop()
 
 # --------------------------------------------------
 # TITLE
@@ -164,23 +182,8 @@ with center:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --------------------------------------------------
-# PRICE CHART   
+# PRICE CHART
 # --------------------------------------------------
-min_date = df_ohlc['date'].min().date()
-max_date = df_ohlc['date'].max().date()
-start_date, end_date = st.sidebar.slider(
-    "Select date range",
-    min_value=min_date,
-    max_value=max_date,
-    value=(min_date, max_date),
-    format="YYYY-MM-DD"
-)
-
-start_date = pd.to_datetime(start_date)
-end_date = pd.to_datetime(end_date)
-df_filtered = df_ohlc[(df_ohlc['date'] >= start_date) & (df_ohlc['date'] <= end_date)]
-
-# Vẽ chart dựa trên df_filtered
 fig, ax = plt.subplots(figsize=(12,6))
 fig.patch.set_facecolor('#0E1117')
 ax.set_facecolor('#0E1117')
@@ -189,7 +192,6 @@ ax.plot(df_filtered['date'], df_filtered['close'], color='#00FFFF', linewidth=2,
 
 ax.set_xlabel("Date", color='white', fontsize=12)
 ax.set_ylabel("Price (VND)", color='white', fontsize=12)
-ax.set_title(f"{company_name} ({selected_symbol}) - Close Price", color='white', fontsize=14)
 
 ax.tick_params(axis='x', colors='white')
 ax.tick_params(axis='y', colors='white')
