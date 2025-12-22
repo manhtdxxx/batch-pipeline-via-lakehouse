@@ -170,6 +170,10 @@ make all-up
 python data/_get_all_data.py
 ```
 
+> ⚠️ Note: This approach is not ideal because it requires an intermediate CSV. The data is first written to a file, then Spark reads the CSV to load it into the lakehouse.
+
+A more efficient approach would be to fetch data directly from the API and write it to the lakehouse without saving a CSV. However, our current Spark image uses Python 3.8, while vnstock requires Python 3.10+. To fetch data directly in Spark using vnstock`, we would need to rebuild the Spark image with Python 3.10 or higher.
+
 ### Step 2: Initializing Schema in Lakehouse using Trino
 
 Once Trino container is running, you can initialize the Lakehouse schema using the SQL initialization script:
@@ -189,7 +193,7 @@ make airflow-ssh-spark
 **3.2** After setting up the SSH connection, access the Airflow UI to trigger the DAG:
 ![DAG](readme/dag.png)
 
-💡 Once the DAG finish, you can open DBeaver and connect to Trino to query the Lakehouse and verify the result.
+> 💡 Once the DAG finish, you can open DBeaver and connect to Trino to query the Lakehouse and verify the result.
 
 ### Step 4: Dashboard using PBI
 
