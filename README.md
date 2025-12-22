@@ -172,7 +172,7 @@ python data/_get_all_data.py
 
 > ⚠️ Note: This approach is not ideal because it requires an intermediate CSV. The data is first written to a file, then Spark reads the CSV to load it into the lakehouse.
 
-A more efficient approach would be to fetch data directly from the API and write it to the lakehouse without saving a CSV. However, our current Spark image uses Python 3.8, while vnstock requires Python 3.10+. To fetch data directly in Spark using vnstock`, we would need to rebuild the Spark image with Python 3.10 or higher.
+A more efficient approach would be to fetch data directly from the API and write it to the lakehouse without saving a CSV. However, our current Spark image uses Python 3.8, while vnstock requires Python 3.10+. To fetch data directly in Spark using `vnstock`, we would need to rebuild the Spark image with Python 3.10 or higher.
 
 ### Step 2: Initializing Schema in Lakehouse using Trino
 
