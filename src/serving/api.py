@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-MODEL_URI = os.getenv("MODEL_URI", "models:/LSTM_Classifier_Model@production")
-LOCAL_MODEL_PATH = "/app/models/lstm_classifier_model"
+MLFLOW_MODEL_URI = os.getenv("MLFLOW_MODEL_URI", "models:/LSTM_Classifier_Model@production")
+LOCAL_MODEL_ROOT = "/app/lstm_classifier_models"
+LOCAL_MODEL_PATH = os.path.join(LOCAL_MODEL_ROOT, "model")
 
 _model_cache = None
 _model_lock = Lock()
@@ -43,28 +44,24 @@ def load_model(retries=5, delay=30, force_reload=False):
         last_exception = None
         for attempt in range(1, retries + 1):
             try:
-                logger.info(f"[MLFLOW] Downloading new model from {MODEL_URI} (Attempt {attempt}/{retries})")
-                new_model = mlflow.pyfunc.load_model(MODEL_URI)
-                logger.info("[MLFLOW] New model downloaded from MLflow")
+                tmp = LOCAL_MODEL_ROOT + "_tmp"
+                if os.path.exists(tmp):
+                    shutil.rmtree(tmp)
+
+                logger.info(f"[MLFLOW] Downloading new model from {MLFLOW_MODEL_URI} (Attempt {attempt}/{retries})")
+                mlflow.artifacts.download_artifacts(artifact_uri=MLFLOW_MODEL_URI, dst_path=tmp)
+                logger.info(f"[MLFLOW] New model downloaded from MLflow, saved at {tmp}")
+
+                if os.path.exists(LOCAL_MODEL_ROOT):
+                    shutil.rmtree(LOCAL_MODEL_ROOT)
+                    logger.info(f"[MODEL] Removed old model at {LOCAL_MODEL_ROOT}")
+
+                os.rename(tmp, LOCAL_MODEL_ROOT)
+                logger.info(f"[MODEL] Renamed {tmp} to {LOCAL_MODEL_ROOT}")
+
+                _model_cache = mlflow.pyfunc.load_model(LOCAL_MODEL_PATH)
+                logger.info("[MODEL] New model loaded into memory")
                 
-                # tmp_path = LOCAL_MODEL_PATH + "_tmp"
-                # if os.path.exists(tmp_path):
-                #     shutil.rmtree(tmp_path)
-
-                # mlflow.artifacts.download_artifacts(artifact_uri=MODEL_URI, dst_path=tmp_path)
-                # logger.info(f"[MODEL] New model saved at {tmp_path}")
-
-                # if os.path.exists(LOCAL_MODEL_PATH):
-                #     shutil.rmtree(LOCAL_MODEL_PATH)
-                #     logger.info(f"[MODEL] Removed old model at {LOCAL_MODEL_PATH}")
-
-                # os.rename(tmp_path, LOCAL_MODEL_PATH)
-                # logger.info(f"[MODEL] Moved new model from {tmp_path} to {LOCAL_MODEL_PATH}")
-
-                # _model_cache = mlflow.pyfunc.load_model(LOCAL_MODEL_PATH)
-                # logger.info("[MODEL] New model loaded into memory")
-                
-                _model_cache = new_model
                 return _model_cache
 
             except Exception as e:

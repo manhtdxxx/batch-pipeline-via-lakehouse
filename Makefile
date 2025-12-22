@@ -51,11 +51,11 @@ ui-down:
 spark-bash:
 	docker exec -it spark-master bash
 
-mlflow-bash:
-	docker exec -it mlflow bash
-
 model-bash:
 	docker exec -it model bash
+
+api-bash:
+	docker exec -it api bash
 
 ui-bash:
 	docker exec -it ui bash

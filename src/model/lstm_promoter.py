@@ -26,7 +26,7 @@ class LSTMPromoter:
     # Load model to score
     def _load(self, uri: str):
         self.logger.debug("Loading model from %s...", uri)
-        return mlflow.tensorflow.load_model(uri)
+        return mlflow.pyfunc.load_model(uri)
 
 
     # Score model

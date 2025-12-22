@@ -91,6 +91,12 @@ services:
   model:
     image: my-ml-app:latest
     container_name: model
+    environment:
+      # MLFlow will automatically detect and use these ENVs
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+      AWS_REGION: us-east-1=value
     command: >
       /bin/bash -c "
       echo manhtdxxx | sudo -S service ssh start &&
@@ -114,17 +120,17 @@ services:
       AWS_ACCESS_KEY_ID: minio
       AWS_SECRET_ACCESS_KEY: minio123
       AWS_REGION: us-east-1
-    volumes:
-      - ./src/serving/api.py:/app/api.py
-      - model_cache:/app/models
+    ports:
+      - "8000:8000"
     user: root
     command: >
       /bin/bash -c "
       mkdir -p /app/models &&
       uvicorn api:app --host 0.0.0.0 --port 8000 --workers 1
       "
-    ports:
-      - "8000:8000"
+    volumes:
+      - ./src/serving/api.py:/app/api.py
+      - model_cache:/app/models
     networks:
       - common-net
 
@@ -133,16 +139,15 @@ services:
     container_name: ui
     depends_on:
       - api
+    ports:
+      - "8501:8501"
+    command: >
+      /bin/bash -c "
+      streamlit run ui.py --server.address 0.0.0.0 --server.port 8501
+      "
     volumes:
       - ./src/serving/ui.py:/app/ui.py
       - ./src/model/trino_utils.py:/app/trino_utils.py
-    command: >
-      /bin/bash -c "
-      pip install mplfinance &&
-      streamlit run ui.py --server.address 0.0.0.0 --server.port 8501
-      "
-    ports:
-      - "8501:8501"
     networks:
       - common-net
 
