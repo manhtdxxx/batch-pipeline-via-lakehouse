@@ -17,7 +17,7 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 MLFLOW_MODEL_URI = os.getenv("MLFLOW_MODEL_URI", "models:/LSTM_Classifier_Model@production")
-LOCAL_MODEL_ROOT = "/app/lstm_classifier_models"
+LOCAL_MODEL_ROOT = "/app/models/lstm_classifier_models"
 LOCAL_MODEL_PATH = os.path.join(LOCAL_MODEL_ROOT, "model")
 
 _model_cache = None
