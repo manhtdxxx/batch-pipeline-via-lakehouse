@@ -202,7 +202,7 @@ Power BI does not include Trino support by default; a custom connector must be s
 - Official Docs: https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-connector-extensibility
 - Custom Connector: https://github.com/CreativeDataEU/PowerBITrinoConnector
 
-> 💡 **Here is the preview:**
+> 💡 Here is the preview:
 
 ![Market Cap](dashboard/market_cap.png)
 
@@ -219,11 +219,14 @@ make model-bash
 python run_pipeline.py
 ```
 
-The pipeline performs the following stages:
-1. **Preprocessing** – Clean and transform the raw data into a format suitable for training.
-2. **Training** – Train a model (e.g., LSTM) using the preprocessed data.
-3. **Evaluation** – Evaluate the model on validation/test data and generate a classification report.
-4. **Model Comparison** – Compare models registered in MLflow and pick the best-performing one for production deployment.
+💡 The pipeline performs the following stages:
+1. **Fetch Data** – Query the Gold layer tables in Lakehouse through Trino to retrieve the refined dataset for ML.
+2. **Preprocessing** – Clean and transform the raw data into a format suitable for training.
+3. **Training** – Train a model (e.g., LSTM) using the preprocessed data.
+4. **Evaluation** – Evaluate the model on validation/test data and generate a classification report.
+5. **Model Comparison** – Compare models registered in MLflow and pick the best-performing one for production deployment.
+
+> ⚠️ Right now, everything runs in one go via `run_pipeline.py`. If I were to do it properly with Airflow, I would split each stage into a separate DAG task. Each task would persist intermediate results (e.g., preprocessed data, trained model) temporarily on MinIO. This way, tasks can be retried independently without rerunning the entire pipeline, making it more robust and maintainable.
 
 ![Registered Model](readme/registered_model.png)
 
