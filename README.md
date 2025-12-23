@@ -202,7 +202,7 @@ Power BI does not include Trino support by default; a custom connector must be s
 - Official Docs: https://learn.microsoft.com/en-us/power-bi/connect-data/desktop-connector-extensibility
 - Custom Connector: https://github.com/CreativeDataEU/PowerBITrinoConnector
 
-> **Here is the preview:**
+> 💡 **Here is the preview:**
 
 ![Market Cap](dashboard/market_cap.png)
 
@@ -227,16 +227,20 @@ The pipeline performs the following stages:
 
 ![Registered Model](readme/registered_model.png)
 
-After the pipeline completes:
-- FastAPI automatically loads the best model from MLflow.
-- The API serves predictions to external applications.
-- Streamlit app interacts with the API for a quick demo of the prediction results.
+💡 After the pipeline completes:
+1. FastAPI automatically loads the best model from MLflow.
+2. The API serves predictions to external applications.
+3. Streamlit app interacts with the API for a quick demo of the prediction results.
 
-> ⚠️ Note: FastAPI will only load the model after MLflow is up and the model has been registered.
+⚠️ Important notes about model loading:
+1. FastAPI will load the model only after the MLflow service is up and the model has been registered.
+2. When FastAPI loads the model for the first time from MLflow, the model will be saved to local disk to avoid re-downloading from MLflow, which saves time.
+3. If you want to reload the model from MLflow (for example, a new version is available), you can call the API `/reload-model`
 
 ![Streamlit App](readme/streamlit.png)
 
 > 💀 My model just hit an avg F1-score of 38%… yep, it’s officially trash.
+
 ---
 
 © 2025 manhtdxxx — All rights reserved.
